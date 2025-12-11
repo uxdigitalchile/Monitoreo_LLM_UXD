@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Endpoint Tester & Benchmarker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            900: '#0d1117',
+                            800: '#161b22',
+                            700: '#21262d',
+                            600: '#30363d',
+                            500: '#484f58',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .gradient-border {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .loading-shimmer {
+            background: linear-gradient(90deg, #21262d 25%, #30363d 50%, #21262d 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        textarea, input {
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        textarea:focus, input:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+        
+        .status-badge {
+            transition: all 0.3s ease;
+        }
+        
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-dark-600 bg-dark-800/50 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                            LLM Endpoint Tester
+                        </h1>
+                        <p class="text-xs text-gray-500">Benchmarker para n8n, AWS & Webhooks</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="connectionStatus" class="status-badge px-3 py-1 rounded-full text-xs font-medium bg-dark-700 text-gray-400">
+                        ● Listo
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Panel de Configuración -->
+            <div class="space-y-4">
+                <!-- Endpoint URL -->
+                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                            </svg>
+                            Endpoint URL
+                        </span>
+                    </label>
+                    <input 
+                        type="url" 
+                        id="endpointUrl" 
+                        placeholder="https://tu-n8n.com/webhook/xxx o https://api.aws.com/..."
+                        class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:outline-none mono text-sm"
+                    >
+                </div>
+
+                <!-- Authorization Token -->
+                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            Authorization Bearer Token
+                            <span class="text-gray-500 font-normal">(opcional)</span>
+                        </span>
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="password" 
+                            id="authToken" 
+                            placeholder="sk-xxx... o tu token de autenticación"
+                            class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 pr-12 text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:outline-none mono text-sm"
+                        >
+                        <button 
+                            type="button"
+                            onclick="toggleTokenVisibility()"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                        >
+                            <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User Message -->
+                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                            </svg>
+                            User Message / Query
+                        </span>
+                    </label>
+                    <textarea 
+                        id="userMessage" 
+                        rows="3"
+                        placeholder="Escribe tu mensaje o pregunta para el agente..."
+                        class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:outline-none resize-none"
+                    >Hola, ¿cómo estás?</textarea>
+                </div>
+
+                <!-- JSON Body Editor -->
+                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-gray-300">
+                            <span class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                                </svg>
+                                JSON Body Template
+                            </span>
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <button 
+                                onclick="resetJsonTemplate()"
+                                class="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                            >
+                                Reset default
+                            </button>
+                            <button 
+                                onclick="formatJson()"
+                                class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                            >
+                                Formatear
+                            </button>
+                        </div>
+                    </div>
+                    <textarea 
+                        id="jsonBody" 
+                        rows="4"
+                        class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:outline-none resize-none mono text-sm"
+                    >{
+  "query": "{{message}}"
+}</textarea>
+                    <p class="mt-2 text-xs text-gray-500">
+                        💡 Usa <code class="bg-dark-700 px-1.5 py-0.5 rounded text-purple-400">{{message}}</code> para insertar el User Message automáticamente
+                    </p>
+                </div>
+
+                <!-- HTTP Method & Headers -->
+                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Método HTTP</label>
+                            <select 
+                                id="httpMethod"
+                                class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 focus:border-indigo-500 focus:outline-none"
+                            >
+                                <option value="POST" selected>POST</option>
+                                <option value="GET">GET</option>
+                                <option value="PUT">PUT</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Content-Type</label>
+                            <select 
+                                id="contentType"
+                                class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 focus:border-indigo-500 focus:outline-none"
+                            >
+                                <option value="application/json" selected>application/json</option>
+                                <option value="text/plain">text/plain</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button 
+                    id="sendBtn"
+                    onclick="sendRequest()"
+                    class="w-full gradient-border text-white font-semibold py-4 px-6 rounded-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span id="btnText">Enviar Request</span>
+                </button>
+            </div>
+
+            <!-- Panel de Resultados -->
+            <div class="space-y-4">
+                <!-- Métricas -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                        <div class="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Latencia
+                        </div>
+                        <div id="latencyValue" class="text-2xl font-bold text-white mono">--</div>
+                        <div class="text-xs text-gray-500">ms</div>
+                    </div>
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                        <div class="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Status
+                        </div>
+                        <div id="statusValue" class="text-2xl font-bold text-white mono">--</div>
+                        <div id="statusText" class="text-xs text-gray-500">Esperando...</div>
+                    </div>
+                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
+                        <div class="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                            </svg>
+                            Tamaño
+                        </div>
+                        <div id="sizeValue" class="text-2xl font-bold text-white mono">--</div>
+                        <div class="text-xs text-gray-500">bytes</div>
+                    </div>
+                </div>
+
+                <!-- Respuesta del LLM -->
+                <div class="bg-dark-800 rounded-xl border border-dark-600 overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-3 border-b border-dark-600 bg-dark-700/50">
+                        <span class="text-sm font-medium text-gray-300 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Respuesta del Agente
+                        </span>
+                        <button 
+                            onclick="copyResponse()"
+                            class="copy-btn text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Copiar
+                        </button>
+                    </div>
+                    <div id="responseContainer" class="p-5 min-h-[200px] max-h-[400px] overflow-y-auto">
+                        <div id="responseContent" class="text-gray-400 text-sm">
+                            <p class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Configura tu endpoint y envía una request para ver la respuesta aquí.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Raw Response (JSON) -->
+                <div class="bg-dark-800 rounded-xl border border-dark-600 overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-3 border-b border-dark-600 bg-dark-700/50">
+                        <span class="text-sm font-medium text-gray-300 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                            </svg>
+                            Raw Response (JSON)
+                        </span>
+                        <button 
+                            onclick="copyRawResponse()"
+                            class="copy-btn text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Copiar
+                        </button>
+                    </div>
+                    <div class="p-5 max-h-[300px] overflow-y-auto bg-dark-900/50">
+                        <pre id="rawResponse" class="text-xs text-gray-400 mono">// La respuesta JSON aparecerá aquí...</pre>
+                    </div>
+                </div>
+
+                <!-- Request History -->
+                <div class="bg-dark-800 rounded-xl border border-dark-600 overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-3 border-b border-dark-600 bg-dark-700/50">
+                        <span class="text-sm font-medium text-gray-300 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Historial de Requests
+                        </span>
+                        <button 
+                            onclick="clearHistory()"
+                            class="text-xs text-red-400 hover:text-red-300 transition-colors"
+                        >
+                            Limpiar
+                        </button>
+                    </div>
+                    <div id="historyContainer" class="p-3 max-h-[200px] overflow-y-auto">
+                        <p class="text-gray-500 text-sm text-center py-4">Sin historial aún</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-dark-700 border border-dark-600 rounded-lg px-4 py-3 shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        <span id="toastText" class="text-sm text-gray-200">Copiado al portapapeles</span>
+    </div>
+
+    <script>
+        // Estado global
+        let requestHistory = [];
+        let lastRawResponse = null;
+        let lastParsedResponse = null;
+
+        // Toggle visibilidad del token
+        function toggleTokenVisibility() {
+            const input = document.getElementById('authToken');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>`;
+            } else {
+                input.type = 'password';
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
+            }
+        }
+
+        // Reset JSON template
+        function resetJsonTemplate() {
+            document.getElementById('jsonBody').value = `{
+  "query": "{{message}}"
+}`;
+        }
+
+        // Formatear JSON
+        function formatJson() {
+            const textarea = document.getElementById('jsonBody');
+            try {
+                const parsed = JSON.parse(textarea.value);
+                textarea.value = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                showToast('JSON inválido', 'error');
+            }
+        }
+
+        // Mostrar toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toastText');
+            const icon = toast.querySelector('svg');
+            
+            toastText.textContent = message;
+            
+            if (type === 'error') {
+                icon.classList.remove('text-green-400');
+                icon.classList.add('text-red-400');
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>`;
+            } else {
+                icon.classList.remove('text-red-400');
+                icon.classList.add('text-green-400');
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>`;
+            }
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        // Copiar respuesta
+        function copyResponse() {
+            if (lastParsedResponse) {
+                navigator.clipboard.writeText(typeof lastParsedResponse === 'string' ? lastParsedResponse : JSON.stringify(lastParsedResponse, null, 2));
+                showToast('Respuesta copiada');
+            }
+        }
+
+        // Copiar raw response
+        function copyRawResponse() {
+            if (lastRawResponse) {
+                navigator.clipboard.writeText(lastRawResponse);
+                showToast('JSON copiado');
+            }
+        }
+
+        // Actualizar estado de conexión
+        function updateConnectionStatus(status, text) {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = 'status-badge px-3 py-1 rounded-full text-xs font-medium';
+            
+            switch(status) {
+                case 'loading':
+                    statusEl.classList.add('bg-yellow-500/20', 'text-yellow-400');
+                    statusEl.innerHTML = `<span class="animate-pulse">● ${text}</span>`;
+                    break;
+                case 'success':
+                    statusEl.classList.add('bg-green-500/20', 'text-green-400');
+                    statusEl.innerHTML = `● ${text}`;
+                    break;
+                case 'error':
+                    statusEl.classList.add('bg-red-500/20', 'text-red-400');
+                    statusEl.innerHTML = `● ${text}`;
+                    break;
+                default:
+                    statusEl.classList.add('bg-dark-700', 'text-gray-400');
+                    statusEl.innerHTML = `● ${text}`;
+            }
+        }
+
+        // Actualizar métricas
+        function updateMetrics(latency, status, size) {
+            document.getElementById('latencyValue').textContent = latency !== null ? latency.toFixed(0) : '--';
+            document.getElementById('statusValue').textContent = status || '--';
+            document.getElementById('sizeValue').textContent = size !== null ? size.toLocaleString() : '--';
+            
+            const statusEl = document.getElementById('statusValue');
+            const statusTextEl = document.getElementById('statusText');
+            
+            if (status >= 200 && status < 300) {
+                statusEl.classList.remove('text-red-400', 'text-yellow-400');
+                statusEl.classList.add('text-green-400');
+                statusTextEl.textContent = 'OK';
+            } else if (status >= 400) {
+                statusEl.classList.remove('text-green-400', 'text-yellow-400');
+                statusEl.classList.add('text-red-400');
+                statusTextEl.textContent = status >= 500 ? 'Server Error' : 'Client Error';
+            } else {
+                statusEl.classList.remove('text-green-400', 'text-red-400');
+                statusEl.classList.add('text-yellow-400');
+                statusTextEl.textContent = 'Redirect';
+            }
+        }
+
+        // Agregar al historial
+        function addToHistory(endpoint, latency, status, success) {
+            const now = new Date();
+            requestHistory.unshift({
+                time: now.toLocaleTimeString(),
+                endpoint: endpoint.substring(0, 40) + (endpoint.length > 40 ? '...' : ''),
+                latency: latency.toFixed(0),
+                status,
+                success
+            });
+            
+            if (requestHistory.length > 10) {
+                requestHistory.pop();
+            }
+            
+            renderHistory();
+        }
+
+        // Renderizar historial
+        function renderHistory() {
+            const container = document.getElementById('historyContainer');
+            
+            if (requestHistory.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Sin historial aún</p>';
+                return;
+            }
+            
+            container.innerHTML = requestHistory.map((item, index) => `
+                <div class="flex items-center justify-between py-2 px-3 ${index > 0 ? 'border-t border-dark-700' : ''} hover:bg-dark-700/50 rounded transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="${item.success ? 'text-green-400' : 'text-red-400'}">
+                            ${item.success ? '✓' : '✗'}
+                        </span>
+                        <div>
+                            <div class="text-xs text-gray-400 mono">${item.endpoint}</div>
+                            <div class="text-xs text-gray-600">${item.time}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-medium ${item.success ? 'text-green-400' : 'text-red-400'}">${item.latency}ms</div>
+                        <div class="text-xs text-gray-500">${item.status}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Limpiar historial
+        function clearHistory() {
+            requestHistory = [];
+            renderHistory();
+            showToast('Historial limpiado');
+        }
+
+        // Extraer respuesta legible del JSON
+        function extractReadableResponse(data) {
+            // Intentar encontrar campos comunes de respuesta LLM
+            const possibleFields = [
+                'response', 'output', 'message', 'content', 'text', 'answer', 
+                'result', 'reply', 'data', 'completion', 'generated_text'
+            ];
+            
+            if (typeof data === 'string') return data;
+            
+            for (const field of possibleFields) {
+                if (data[field]) {
+                    if (typeof data[field] === 'string') return data[field];
+                    if (typeof data[field] === 'object') {
+                        // Buscar recursivamente
+                        const nested = extractReadableResponse(data[field]);
+                        if (nested) return nested;
+                    }
+                }
+            }
+            
+            // Si es un array, intentar el primer elemento
+            if (Array.isArray(data) && data.length > 0) {
+                return extractReadableResponse(data[0]);
+            }
+            
+            // Devolver JSON formateado como fallback
+            return JSON.stringify(data, null, 2);
+        }
+
+        // Enviar request principal
+        async function sendRequest() {
+            const endpoint = document.getElementById('endpointUrl').value.trim();
+            const token = document.getElementById('authToken').value.trim();
+            const userMessage = document.getElementById('userMessage').value.trim();
+            const jsonTemplate = document.getElementById('jsonBody').value;
+            const method = document.getElementById('httpMethod').value;
+            const contentType = document.getElementById('contentType').value;
+            
+            // Validaciones
+            if (!endpoint) {
+                showToast('Por favor ingresa una URL de endpoint', 'error');
+                return;
+            }
+            
+            if (!userMessage) {
+                showToast('Por favor ingresa un mensaje', 'error');
+                return;
+            }
+            
+            // Preparar body reemplazando el placeholder
+            let body;
+            try {
+                const processedTemplate = jsonTemplate.replace(/\{\{message\}\}/g, userMessage.replace(/"/g, '\\"'));
+                body = JSON.parse(processedTemplate);
+            } catch (e) {
+                showToast('Error en el JSON body: ' + e.message, 'error');
+                return;
+            }
+            
+            // UI: Loading state
+            const btn = document.getElementById('sendBtn');
+            const btnText = document.getElementById('btnText');
+            btn.disabled = true;
+            btn.classList.add('opacity-70');
+            btnText.textContent = 'Enviando...';
+            updateConnectionStatus('loading', 'Conectando...');
+            
+            document.getElementById('responseContent').innerHTML = `
+                <div class="loading-shimmer h-4 rounded w-3/4 mb-2"></div>
+                <div class="loading-shimmer h-4 rounded w-1/2 mb-2"></div>
+                <div class="loading-shimmer h-4 rounded w-2/3"></div>
+            `;
+            
+            // Preparar headers
+            const headers = {
+                'Content-Type': contentType,
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            // Medir tiempo
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method,
+                    headers,
+                    body: method !== 'GET' ? JSON.stringify(body) : undefined,
+                });
+                
+                const endTime = performance.now();
+                const latency = endTime - startTime;
+                
+                const responseText = await response.text();
+                const responseSize = new Blob([responseText]).size;
+                
+                // Guardar raw response
+                lastRawResponse = responseText;
+                
+                // Intentar parsear como JSON
+                let parsedData;
+                try {
+                    parsedData = JSON.parse(responseText);
+                    document.getElementById('rawResponse').textContent = JSON.stringify(parsedData, null, 2);
+                } catch {
+                    parsedData = responseText;
+                    document.getElementById('rawResponse').textContent = responseText;
+                }
+                
+                lastParsedResponse = parsedData;
+                
+                // Actualizar métricas
+                updateMetrics(latency, response.status, responseSize);
+                
+                // Mostrar respuesta legible
+                const readableResponse = extractReadableResponse(parsedData);
+                document.getElementById('responseContent').innerHTML = `
+                    <div class="prose prose-invert max-w-none">
+                        <p class="text-gray-200 whitespace-pre-wrap">${escapeHtml(readableResponse)}</p>
+                    </div>
+                `;
+                
+                // Estado de conexión
+                if (response.ok) {
+                    updateConnectionStatus('success', 'Éxito');
+                    addToHistory(endpoint, latency, response.status, true);
+                } else {
+                    updateConnectionStatus('error', `Error ${response.status}`);
+                    addToHistory(endpoint, latency, response.status, false);
+                }
+                
+            } catch (error) {
+                const endTime = performance.now();
+                const latency = endTime - startTime;
+                
+                updateConnectionStatus('error', 'Fallo');
+                updateMetrics(latency, 0, null);
+                
+                document.getElementById('responseContent').innerHTML = `
+                    <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                        <div class="flex items-center gap-2 text-red-400 mb-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="font-medium">Error de conexión</span>
+                        </div>
+                        <p class="text-red-300 text-sm">${escapeHtml(error.message)}</p>
+                        <p class="text-gray-500 text-xs mt-2">Verifica que el endpoint esté activo y permita CORS.</p>
+                    </div>
+                `;
+                
+                document.getElementById('rawResponse').textContent = `// Error: ${error.message}`;
+                addToHistory(endpoint, latency, 'FAIL', false);
+                
+            } finally {
+                // Reset UI
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
+                btnText.textContent = 'Enviar Request';
+            }
+        }
+
+        // Escapar HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Atajos de teclado
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                sendRequest();
+            }
+        });
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            // Cargar datos guardados del localStorage si existen
+            const savedEndpoint = localStorage.getItem('llm_tester_endpoint');
+            const savedToken = localStorage.getItem('llm_tester_token');
+            const savedJson = localStorage.getItem('llm_tester_json');
+            
+            if (savedEndpoint) document.getElementById('endpointUrl').value = savedEndpoint;
+            if (savedToken) document.getElementById('authToken').value = savedToken;
+            if (savedJson) document.getElementById('jsonBody').value = savedJson;
+            
+            // Guardar cambios automáticamente
+            ['endpointUrl', 'authToken', 'jsonBody'].forEach(id => {
+                document.getElementById(id).addEventListener('change', () => {
+                    localStorage.setItem(`llm_tester_${id.replace('endpointUrl', 'endpoint').replace('authToken', 'token').replace('jsonBody', 'json')}`, document.getElementById(id).value);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
