@@ -1,754 +1,1117 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM Endpoint Tester & Benchmarker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: {
-                            900: '#0d1117',
-                            800: '#161b22',
-                            700: '#21262d',
-                            600: '#30363d',
-                            500: '#484f58',
-                        }
-                    }
-                }
+    <title>Reporte Agente Virtual de Biología</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .header .logo-container img {
+            height: 50px;
+            width: auto;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .config-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .config-panel h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card .number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .label {
+            font-size: 1.1em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .chart-card h3 {
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .table-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+
+        .table-card h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tbody tr:hover {
+            background: #f5f5f5;
+        }
+
+        .message-preview {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status.connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .success {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filters select, .filters input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .refresh-btn {
+            background: #4caf50;
+            margin-left: auto;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .pagination .btn {
+            padding: 8px 20px;
+            font-size: 14px;
+        }
+
+        .pagination .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        #page-info {
+            color: #333;
+        }
+
+        /* 📱 RESPONSIVE DESIGN - Mobile & Tablet */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.6em;
+            }
+
+            .header .logo-container img {
+                height: 40px;
+            }
+
+            .config-panel, .stat-card, .chart-card, .table-card {
+                padding: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .stat-card .number {
+                font-size: 2em;
+            }
+
+            .stat-card .label {
+                font-size: 0.85em;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .filters select, .filters input, .filters button {
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                padding: 14px 20px;
+                font-size: 15px;
+            }
+
+            .pagination {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .pagination button {
+                width: 100%;
+            }
+
+            table {
+                font-size: 13px;
+            }
+
+            th, td {
+                padding: 8px 4px;
+            }
+
+            .message-preview {
+                max-width: 150px;
+            }
+
+            .table-card {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
         }
-    </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .mono {
-            font-family: 'JetBrains Mono', monospace;
-        }
-        
-        .gradient-border {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
-        }
-        
-        .animate-pulse-slow {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-        
-        .loading-shimmer {
-            background: linear-gradient(90deg, #21262d 25%, #30363d 50%, #21262d 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-        
-        textarea, input {
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        textarea:focus, input:focus {
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
-        }
-        
-        .status-badge {
-            transition: all 0.3s ease;
-        }
-        
-        pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        
-        .copy-btn:active {
-            transform: scale(0.95);
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.3em;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card .number {
+                font-size: 1.8em;
+            }
+
+            table {
+                font-size: 11px;
+            }
+
+            th, td {
+                padding: 6px 3px;
+            }
         }
     </style>
 </head>
-<body class="bg-dark-900 text-gray-100 min-h-screen">
-    <!-- Header -->
-    <header class="border-b border-dark-600 bg-dark-800/50 backdrop-blur-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                            LLM Endpoint Tester
-                        </h1>
-                        <p class="text-xs text-gray-500">Benchmarker para n8n, AWS & Webhooks</p>
-                    </div>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAAyCAYAAAAZUZThAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAABDCSURBVHgB7Z0HdFTVFobP9E4SSCUJNYTeewchCKIgIEWKIE1AARWw0FEQQUCqgKAiIE1ARUGK9C4dQpcaQg+BkJ5M3/vOSWYgQJJJmZlkEvZ663/rnLP33fe+e+/dZ05ERESERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERERE" alt="UXDigital Logo" style="height: 50px;">
+                <h1>Reporte Agente Virtual de Biología</h1>
+            </div>
+            <p>Análisis de conversaciones en tiempo real</p>
+            <div id="connection-status"></div>
+        </div>
+
+        <div class="config-panel">
+            <h3>🔧 Configuración de Supabase</h3>
+            <div class="input-group">
+                <div>
+                    <label for="supabase-url">Supabase URL:</label>
+                    <input type="text" id="supabase-url" placeholder="https://tu-proyecto.supabase.co" value="https://xycaebocoeuwbhygjhjn.supabase.co">
                 </div>
-                <div class="flex items-center gap-2">
-                    <span id="connectionStatus" class="status-badge px-3 py-1 rounded-full text-xs font-medium bg-dark-700 text-gray-400">
-                        ● Listo
-                    </span>
+                <div>
+                    <label for="supabase-key">Supabase Anon Key:</label>
+                    <input type="password" id="supabase-key" placeholder="Tu clave anon pública">
+                </div>
+            </div>
+            <button class="btn" onclick="connectSupabase()">🔌 Conectar y Cargar Datos</button>
+        </div>
+
+        <div id="dashboard-content" style="display: none;">
+            <div class="filters">
+                <select id="period-filter" onchange="loadData()">
+                    <option value="all">Todos los registros</option>
+                    <option value="today">Hoy</option>
+                    <option value="week">Última semana</option>
+                    <option value="month">Último mes</option>
+                </select>
+                <input type="date" id="date-from" onchange="loadData()">
+                <input type="date" id="date-to" onchange="loadData()">
+                <button class="btn refresh-btn" onclick="loadData()">🔄 Actualizar</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="number" id="total-conversations">0</div>
+                    <div class="label">Total Conversaciones</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="total-sessions">0</div>
+                    <div class="label">Sesiones Únicas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="avg-rating">-</div>
+                    <div class="label">Rating Promedio</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="total-ratings">0</div>
+                    <div class="label">Calificaciones</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>📈 Conversaciones por Día</h3>
+                    <canvas id="dailyChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>⭐ Distribución de Calificaciones</h3>
+                    <canvas id="ratingsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>🕐 Conversaciones por Hora</h3>
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>📊 Calificaciones por Día</h3>
+                    <canvas id="ratingsTimeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card" style="margin-bottom: 30px;">
+                <h3>📊 Top 10 Sesiones más Activas</h3>
+                <canvas id="sessionsChart"></canvas>
+            </div>
+
+            <div class="table-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;">💬 Últimas Conversaciones</h3>
+                    <button class="btn" onclick="downloadCSV()" style="padding: 8px 20px; font-size: 14px;">
+                        📥 Descargar Todas (CSV)
+                    </button>
+                </div>
+                <table id="conversations-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Fecha y Hora (Chile)</th>
+                            <th>Mensaje</th>
+                            <th>Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <button class="btn" onclick="previousPage()" id="prev-btn">⬅️ Anterior</button>
+                    <span id="page-info" style="margin: 0 20px; font-weight: 600;">Página 1</span>
+                    <button class="btn" onclick="nextPage()" id="next-btn">Siguiente ➡️</button>
                 </div>
             </div>
         </div>
-    </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Panel de Configuración -->
-            <div class="space-y-4">
-                <!-- Endpoint URL -->
-                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">
-                        <span class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                            </svg>
-                            Endpoint URL
-                        </span>
-                    </label>
-                    <input 
-                        type="url" 
-                        id="endpointUrl" 
-                        placeholder="https://tu-n8n.com/webhook/xxx o https://api.aws.com/..."
-                        class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:outline-none mono text-sm"
-                    >
-                </div>
-
-                <!-- Authorization Token -->
-                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">
-                        <span class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                            </svg>
-                            Authorization Bearer Token
-                            <span class="text-gray-500 font-normal">(opcional)</span>
-                        </span>
-                    </label>
-                    <div class="relative">
-                        <input 
-                            type="password" 
-                            id="authToken" 
-                            placeholder="sk-xxx... o tu token de autenticación"
-                            class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 pr-12 text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:outline-none mono text-sm"
-                        >
-                        <button 
-                            type="button"
-                            onclick="toggleTokenVisibility()"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
-                        >
-                            <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- User Message -->
-                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">
-                        <span class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                            </svg>
-                            User Message / Query
-                        </span>
-                    </label>
-                    <textarea 
-                        id="userMessage" 
-                        rows="3"
-                        placeholder="Escribe tu mensaje o pregunta para el agente..."
-                        class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:outline-none resize-none"
-                    >Hola, ¿cómo estás?</textarea>
-                </div>
-
-                <!-- JSON Body Editor -->
-                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-sm font-medium text-gray-300">
-                            <span class="flex items-center gap-2">
-                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                                </svg>
-                                JSON Body Template
-                            </span>
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <button 
-                                onclick="resetJsonTemplate()"
-                                class="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-                            >
-                                Reset default
-                            </button>
-                            <button 
-                                onclick="formatJson()"
-                                class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
-                            >
-                                Formatear
-                            </button>
-                        </div>
-                    </div>
-                    <textarea 
-                        id="jsonBody" 
-                        rows="4"
-                        class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:outline-none resize-none mono text-sm"
-                    >{
-  "query": "{{message}}"
-}</textarea>
-                    <p class="mt-2 text-xs text-gray-500">
-                        💡 Usa <code class="bg-dark-700 px-1.5 py-0.5 rounded text-purple-400">{{message}}</code> para insertar el User Message automáticamente
-                    </p>
-                </div>
-
-                <!-- HTTP Method & Headers -->
-                <div class="bg-dark-800 rounded-xl p-5 border border-dark-600">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Método HTTP</label>
-                            <select 
-                                id="httpMethod"
-                                class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 focus:border-indigo-500 focus:outline-none"
-                            >
-                                <option value="POST" selected>POST</option>
-                                <option value="GET">GET</option>
-                                <option value="PUT">PUT</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Content-Type</label>
-                            <select 
-                                id="contentType"
-                                class="w-full bg-dark-900 border border-dark-600 rounded-lg px-4 py-3 text-gray-100 focus:border-indigo-500 focus:outline-none"
-                            >
-                                <option value="application/json" selected>application/json</option>
-                                <option value="text/plain">text/plain</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Button -->
-                <button 
-                    id="sendBtn"
-                    onclick="sendRequest()"
-                    class="w-full gradient-border text-white font-semibold py-4 px-6 rounded-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25"
-                >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
-                    <span id="btnText">Enviar Request</span>
-                </button>
-            </div>
-
-            <!-- Panel de Resultados -->
-            <div class="space-y-4">
-                <!-- Métricas -->
-                <div class="grid grid-cols-3 gap-3">
-                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
-                        <div class="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Latencia
-                        </div>
-                        <div id="latencyValue" class="text-2xl font-bold text-white mono">--</div>
-                        <div class="text-xs text-gray-500">ms</div>
-                    </div>
-                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
-                        <div class="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Status
-                        </div>
-                        <div id="statusValue" class="text-2xl font-bold text-white mono">--</div>
-                        <div id="statusText" class="text-xs text-gray-500">Esperando...</div>
-                    </div>
-                    <div class="bg-dark-800 rounded-xl p-4 border border-dark-600">
-                        <div class="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
-                            </svg>
-                            Tamaño
-                        </div>
-                        <div id="sizeValue" class="text-2xl font-bold text-white mono">--</div>
-                        <div class="text-xs text-gray-500">bytes</div>
-                    </div>
-                </div>
-
-                <!-- Respuesta del LLM -->
-                <div class="bg-dark-800 rounded-xl border border-dark-600 overflow-hidden">
-                    <div class="flex items-center justify-between px-5 py-3 border-b border-dark-600 bg-dark-700/50">
-                        <span class="text-sm font-medium text-gray-300 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Respuesta del Agente
-                        </span>
-                        <button 
-                            onclick="copyResponse()"
-                            class="copy-btn text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                            </svg>
-                            Copiar
-                        </button>
-                    </div>
-                    <div id="responseContainer" class="p-5 min-h-[200px] max-h-[400px] overflow-y-auto">
-                        <div id="responseContent" class="text-gray-400 text-sm">
-                            <p class="flex items-center gap-2">
-                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                Configura tu endpoint y envía una request para ver la respuesta aquí.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Raw Response (JSON) -->
-                <div class="bg-dark-800 rounded-xl border border-dark-600 overflow-hidden">
-                    <div class="flex items-center justify-between px-5 py-3 border-b border-dark-600 bg-dark-700/50">
-                        <span class="text-sm font-medium text-gray-300 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                            </svg>
-                            Raw Response (JSON)
-                        </span>
-                        <button 
-                            onclick="copyRawResponse()"
-                            class="copy-btn text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                            </svg>
-                            Copiar
-                        </button>
-                    </div>
-                    <div class="p-5 max-h-[300px] overflow-y-auto bg-dark-900/50">
-                        <pre id="rawResponse" class="text-xs text-gray-400 mono">// La respuesta JSON aparecerá aquí...</pre>
-                    </div>
-                </div>
-
-                <!-- Request History -->
-                <div class="bg-dark-800 rounded-xl border border-dark-600 overflow-hidden">
-                    <div class="flex items-center justify-between px-5 py-3 border-b border-dark-600 bg-dark-700/50">
-                        <span class="text-sm font-medium text-gray-300 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Historial de Requests
-                        </span>
-                        <button 
-                            onclick="clearHistory()"
-                            class="text-xs text-red-400 hover:text-red-300 transition-colors"
-                        >
-                            Limpiar
-                        </button>
-                    </div>
-                    <div id="historyContainer" class="p-3 max-h-[200px] overflow-y-auto">
-                        <p class="text-gray-500 text-sm text-center py-4">Sin historial aún</p>
-                    </div>
-                </div>
-            </div>
+        <div id="loading" class="loading" style="display: none;">
+            ⏳ Cargando datos...
         </div>
-    </main>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-4 right-4 bg-dark-700 border border-dark-600 rounded-lg px-4 py-3 shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
-        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-        </svg>
-        <span id="toastText" class="text-sm text-gray-200">Copiado al portapapeles</span>
+        <div id="message" style="display: none;"></div>
     </div>
 
     <script>
-        // Estado global
-        let requestHistory = [];
-        let lastRawResponse = null;
-        let lastParsedResponse = null;
+        let supabaseUrl;
+        let supabaseKey;
+        let allData = [];
+        let charts = {};
+        let currentPage = 1;
+        const rowsPerPage = 25;
 
-        // Toggle visibilidad del token
-        function toggleTokenVisibility() {
-            const input = document.getElementById('authToken');
-            const icon = document.getElementById('eyeIcon');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>`;
-            } else {
-                input.type = 'password';
-                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('connection-status');
+            statusDiv.innerHTML = `<span class="status ${isError ? 'disconnected' : 'connected'}">${message}</span>`;
+        }
+
+        function showMessage(message, isError = false) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = isError ? 'error' : 'success';
+            messageDiv.innerHTML = message;
+            messageDiv.style.display = 'block';
+            
+            if (!isError) {
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
             }
         }
 
-        // Reset JSON template
-        function resetJsonTemplate() {
-            document.getElementById('jsonBody').value = `{
-  "query": "{{message}}"
-}`;
-        }
-
-        // Formatear JSON
-        function formatJson() {
-            const textarea = document.getElementById('jsonBody');
-            try {
-                const parsed = JSON.parse(textarea.value);
-                textarea.value = JSON.stringify(parsed, null, 2);
-            } catch (e) {
-                showToast('JSON inválido', 'error');
-            }
-        }
-
-        // Mostrar toast
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastText = document.getElementById('toastText');
-            const icon = toast.querySelector('svg');
+        async function fetchSupabase(endpoint, options = {}) {
+            const url = `${supabaseUrl}/rest/v1/${endpoint}`;
             
-            toastText.textContent = message;
-            
-            if (type === 'error') {
-                icon.classList.remove('text-green-400');
-                icon.classList.add('text-red-400');
-                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>`;
-            } else {
-                icon.classList.remove('text-red-400');
-                icon.classList.add('text-green-400');
-                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>`;
-            }
-            
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 2500);
-        }
-
-        // Copiar respuesta
-        function copyResponse() {
-            if (lastParsedResponse) {
-                navigator.clipboard.writeText(typeof lastParsedResponse === 'string' ? lastParsedResponse : JSON.stringify(lastParsedResponse, null, 2));
-                showToast('Respuesta copiada');
-            }
-        }
-
-        // Copiar raw response
-        function copyRawResponse() {
-            if (lastRawResponse) {
-                navigator.clipboard.writeText(lastRawResponse);
-                showToast('JSON copiado');
-            }
-        }
-
-        // Actualizar estado de conexión
-        function updateConnectionStatus(status, text) {
-            const statusEl = document.getElementById('connectionStatus');
-            statusEl.className = 'status-badge px-3 py-1 rounded-full text-xs font-medium';
-            
-            switch(status) {
-                case 'loading':
-                    statusEl.classList.add('bg-yellow-500/20', 'text-yellow-400');
-                    statusEl.innerHTML = `<span class="animate-pulse">● ${text}</span>`;
-                    break;
-                case 'success':
-                    statusEl.classList.add('bg-green-500/20', 'text-green-400');
-                    statusEl.innerHTML = `● ${text}`;
-                    break;
-                case 'error':
-                    statusEl.classList.add('bg-red-500/20', 'text-red-400');
-                    statusEl.innerHTML = `● ${text}`;
-                    break;
-                default:
-                    statusEl.classList.add('bg-dark-700', 'text-gray-400');
-                    statusEl.innerHTML = `● ${text}`;
-            }
-        }
-
-        // Actualizar métricas
-        function updateMetrics(latency, status, size) {
-            document.getElementById('latencyValue').textContent = latency !== null ? latency.toFixed(0) : '--';
-            document.getElementById('statusValue').textContent = status || '--';
-            document.getElementById('sizeValue').textContent = size !== null ? size.toLocaleString() : '--';
-            
-            const statusEl = document.getElementById('statusValue');
-            const statusTextEl = document.getElementById('statusText');
-            
-            if (status >= 200 && status < 300) {
-                statusEl.classList.remove('text-red-400', 'text-yellow-400');
-                statusEl.classList.add('text-green-400');
-                statusTextEl.textContent = 'OK';
-            } else if (status >= 400) {
-                statusEl.classList.remove('text-green-400', 'text-yellow-400');
-                statusEl.classList.add('text-red-400');
-                statusTextEl.textContent = status >= 500 ? 'Server Error' : 'Client Error';
-            } else {
-                statusEl.classList.remove('text-green-400', 'text-red-400');
-                statusEl.classList.add('text-yellow-400');
-                statusTextEl.textContent = 'Redirect';
-            }
-        }
-
-        // Agregar al historial
-        function addToHistory(endpoint, latency, status, success) {
-            const now = new Date();
-            requestHistory.unshift({
-                time: now.toLocaleTimeString(),
-                endpoint: endpoint.substring(0, 40) + (endpoint.length > 40 ? '...' : ''),
-                latency: latency.toFixed(0),
-                status,
-                success
-            });
-            
-            if (requestHistory.length > 10) {
-                requestHistory.pop();
-            }
-            
-            renderHistory();
-        }
-
-        // Renderizar historial
-        function renderHistory() {
-            const container = document.getElementById('historyContainer');
-            
-            if (requestHistory.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Sin historial aún</p>';
-                return;
-            }
-            
-            container.innerHTML = requestHistory.map((item, index) => `
-                <div class="flex items-center justify-between py-2 px-3 ${index > 0 ? 'border-t border-dark-700' : ''} hover:bg-dark-700/50 rounded transition-colors">
-                    <div class="flex items-center gap-3">
-                        <span class="${item.success ? 'text-green-400' : 'text-red-400'}">
-                            ${item.success ? '✓' : '✗'}
-                        </span>
-                        <div>
-                            <div class="text-xs text-gray-400 mono">${item.endpoint}</div>
-                            <div class="text-xs text-gray-600">${item.time}</div>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm font-medium ${item.success ? 'text-green-400' : 'text-red-400'}">${item.latency}ms</div>
-                        <div class="text-xs text-gray-500">${item.status}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Limpiar historial
-        function clearHistory() {
-            requestHistory = [];
-            renderHistory();
-            showToast('Historial limpiado');
-        }
-
-        // Extraer respuesta legible del JSON
-        function extractReadableResponse(data) {
-            // Intentar encontrar campos comunes de respuesta LLM
-            const possibleFields = [
-                'response', 'output', 'message', 'content', 'text', 'answer', 
-                'result', 'reply', 'data', 'completion', 'generated_text'
-            ];
-            
-            if (typeof data === 'string') return data;
-            
-            for (const field of possibleFields) {
-                if (data[field]) {
-                    if (typeof data[field] === 'string') return data[field];
-                    if (typeof data[field] === 'object') {
-                        // Buscar recursivamente
-                        const nested = extractReadableResponse(data[field]);
-                        if (nested) return nested;
-                    }
-                }
-            }
-            
-            // Si es un array, intentar el primer elemento
-            if (Array.isArray(data) && data.length > 0) {
-                return extractReadableResponse(data[0]);
-            }
-            
-            // Devolver JSON formateado como fallback
-            return JSON.stringify(data, null, 2);
-        }
-
-        // Enviar request principal
-        async function sendRequest() {
-            const endpoint = document.getElementById('endpointUrl').value.trim();
-            const token = document.getElementById('authToken').value.trim();
-            const userMessage = document.getElementById('userMessage').value.trim();
-            const jsonTemplate = document.getElementById('jsonBody').value;
-            const method = document.getElementById('httpMethod').value;
-            const contentType = document.getElementById('contentType').value;
-            
-            // Validaciones
-            if (!endpoint) {
-                showToast('Por favor ingresa una URL de endpoint', 'error');
-                return;
-            }
-            
-            if (!userMessage) {
-                showToast('Por favor ingresa un mensaje', 'error');
-                return;
-            }
-            
-            // Preparar body reemplazando el placeholder
-            let body;
-            try {
-                const processedTemplate = jsonTemplate.replace(/\{\{message\}\}/g, userMessage.replace(/"/g, '\\"'));
-                body = JSON.parse(processedTemplate);
-            } catch (e) {
-                showToast('Error en el JSON body: ' + e.message, 'error');
-                return;
-            }
-            
-            // UI: Loading state
-            const btn = document.getElementById('sendBtn');
-            const btnText = document.getElementById('btnText');
-            btn.disabled = true;
-            btn.classList.add('opacity-70');
-            btnText.textContent = 'Enviando...';
-            updateConnectionStatus('loading', 'Conectando...');
-            
-            document.getElementById('responseContent').innerHTML = `
-                <div class="loading-shimmer h-4 rounded w-3/4 mb-2"></div>
-                <div class="loading-shimmer h-4 rounded w-1/2 mb-2"></div>
-                <div class="loading-shimmer h-4 rounded w-2/3"></div>
-            `;
-            
-            // Preparar headers
             const headers = {
-                'Content-Type': contentType,
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
             };
-            
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(url, {
+                ...options,
+                headers: { ...headers, ...options.headers }
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`HTTP ${response.status}: ${error}`);
             }
-            
-            // Medir tiempo
-            const startTime = performance.now();
-            
+
+            return response.json();
+        }
+
+        async function connectSupabase() {
+            supabaseUrl = document.getElementById('supabase-url').value.trim();
+            supabaseKey = document.getElementById('supabase-key').value.trim();
+
+            if (!supabaseUrl || !supabaseKey) {
+                showMessage('Por favor ingresa la URL y la clave de Supabase', true);
+                return;
+            }
+
+            // Asegurar que la URL tenga el protocolo correcto
+            if (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://')) {
+                supabaseUrl = 'https://' + supabaseUrl;
+                document.getElementById('supabase-url').value = supabaseUrl;
+            }
+
             try {
-                const response = await fetch(endpoint, {
-                    method,
-                    headers,
-                    body: method !== 'GET' ? JSON.stringify(body) : undefined,
-                });
+                showStatus('Conectando...', false);
+                document.getElementById('message').style.display = 'none';
                 
-                const endTime = performance.now();
-                const latency = endTime - startTime;
+                console.log('Probando conexión a:', supabaseUrl);
                 
-                const responseText = await response.text();
-                const responseSize = new Blob([responseText]).size;
+                // Test connection
+                const data = await fetchSupabase('agente_biologia_ava?select=id&limit=1');
                 
-                // Guardar raw response
-                lastRawResponse = responseText;
-                
-                // Intentar parsear como JSON
-                let parsedData;
-                try {
-                    parsedData = JSON.parse(responseText);
-                    document.getElementById('rawResponse').textContent = JSON.stringify(parsedData, null, 2);
-                } catch {
-                    parsedData = responseText;
-                    document.getElementById('rawResponse').textContent = responseText;
-                }
-                
-                lastParsedResponse = parsedData;
-                
-                // Actualizar métricas
-                updateMetrics(latency, response.status, responseSize);
-                
-                // Mostrar respuesta legible
-                const readableResponse = extractReadableResponse(parsedData);
-                document.getElementById('responseContent').innerHTML = `
-                    <div class="prose prose-invert max-w-none">
-                        <p class="text-gray-200 whitespace-pre-wrap">${escapeHtml(readableResponse)}</p>
-                    </div>
-                `;
-                
-                // Estado de conexión
-                if (response.ok) {
-                    updateConnectionStatus('success', 'Éxito');
-                    addToHistory(endpoint, latency, response.status, true);
-                } else {
-                    updateConnectionStatus('error', `Error ${response.status}`);
-                    addToHistory(endpoint, latency, response.status, false);
-                }
+                console.log('Conexión exitosa!');
+                showStatus('✅ Conectado', false);
+                showMessage('✅ Conexión exitosa a Supabase', false);
+                document.getElementById('dashboard-content').style.display = 'block';
+                await loadData();
                 
             } catch (error) {
-                const endTime = performance.now();
-                const latency = endTime - startTime;
+                console.error('Error completo:', error);
+                showStatus('❌ Error de conexión', true);
                 
-                updateConnectionStatus('error', 'Fallo');
-                updateMetrics(latency, 0, null);
-                
-                document.getElementById('responseContent').innerHTML = `
-                    <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                        <div class="flex items-center gap-2 text-red-400 mb-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span class="font-medium">Error de conexión</span>
-                        </div>
-                        <p class="text-red-300 text-sm">${escapeHtml(error.message)}</p>
-                        <p class="text-gray-500 text-xs mt-2">Verifica que el endpoint esté activo y permita CORS.</p>
-                    </div>
-                `;
-                
-                document.getElementById('rawResponse').textContent = `// Error: ${error.message}`;
-                addToHistory(endpoint, latency, 'FAIL', false);
-                
-            } finally {
-                // Reset UI
-                btn.disabled = false;
-                btn.classList.remove('opacity-70');
-                btnText.textContent = 'Enviar Request';
+                showMessage(`
+                    <strong>Error al conectar:</strong><br>
+                    ${error.message}<br><br>
+                    <strong>Verifica:</strong><br>
+                    1. La URL es correcta: ${supabaseUrl}<br>
+                    2. La clave anon es correcta<br>
+                    3. Row Level Security está configurado con política de lectura pública<br>
+                    4. La tabla 'agente_biologia_ava' existe
+                `, true);
             }
         }
 
-        // Escapar HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        async function loadData() {
+            if (!supabaseUrl || !supabaseKey) return;
 
-        // Atajos de teclado
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                sendRequest();
-            }
-        });
+            document.getElementById('loading').style.display = 'block';
 
-        // Inicialización
-        document.addEventListener('DOMContentLoaded', () => {
-            // Cargar datos guardados del localStorage si existen
-            const savedEndpoint = localStorage.getItem('llm_tester_endpoint');
-            const savedToken = localStorage.getItem('llm_tester_token');
-            const savedJson = localStorage.getItem('llm_tester_json');
-            
-            if (savedEndpoint) document.getElementById('endpointUrl').value = savedEndpoint;
-            if (savedToken) document.getElementById('authToken').value = savedToken;
-            if (savedJson) document.getElementById('jsonBody').value = savedJson;
-            
-            // Guardar cambios automáticamente
-            ['endpointUrl', 'authToken', 'jsonBody'].forEach(id => {
-                document.getElementById(id).addEventListener('change', () => {
-                    localStorage.setItem(`llm_tester_${id.replace('endpointUrl', 'endpoint').replace('authToken', 'token').replace('jsonBody', 'json')}`, document.getElementById(id).value);
+            try {
+                let query = 'agente_biologia_ava?select=id,session_id,message,user_email,rating,created_at,created_at_chile:created_at&order=created_at.desc';
+
+                // Apply filters
+                const period = document.getElementById('period-filter').value;
+                const dateFrom = document.getElementById('date-from').value;
+                const dateTo = document.getElementById('date-to').value;
+
+                if (period === 'today') {
+                    const today = new Date().toISOString().split('T')[0];
+                    query += `&created_at=gte.${today}`;
+                } else if (period === 'week') {
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    query += `&created_at=gte.${weekAgo.toISOString()}`;
+                } else if (period === 'month') {
+                    const monthAgo = new Date();
+                    monthAgo.setMonth(monthAgo.getMonth() - 1);
+                    query += `&created_at=gte.${monthAgo.toISOString()}`;
+                }
+
+                if (dateFrom) {
+                    query += `&created_at=gte.${dateFrom}T00:00:00`;
+                }
+                if (dateTo) {
+                    const endDate = new Date(dateTo);
+                    endDate.setDate(endDate.getDate() + 1);
+                    query += `&created_at=lt.${endDate.toISOString()}`;
+                }
+
+                const data = await fetchSupabase(query);
+                
+                // Convertir created_at de UTC a Chile manualmente
+                data.forEach(item => {
+                    if (item.created_at) {
+                        // Crear fecha UTC y aplicar offset de Chile (UTC-3 en verano, UTC-4 en invierno)
+                        const utcDate = new Date(item.created_at);
+                        // PostgreSQL devuelve UTC, restar 3 horas para Chile (verano)
+                        // La zona horaria America/Santiago maneja automáticamente el horario de verano
+                        const chileOffset = -3 * 60; // UTC-3 en minutos
+                        const localOffset = utcDate.getTimezoneOffset(); // Offset del navegador
+                        const totalOffset = chileOffset - localOffset;
+                        
+                        const chileDate = new Date(utcDate.getTime() + totalOffset * 60000);
+                        item.created_at_local = chileDate;
+                    }
                 });
+                
+                allData = data;
+                updateDashboard(data);
+                console.log('Datos cargados:', data.length, 'registros');
+                
+            } catch (error) {
+                showMessage('Error al cargar datos: ' + error.message, true);
+                console.error('Error:', error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function updateDashboard(data) {
+            // Reset pagination
+            currentPage = 1;
+            
+            // Update stats
+            document.getElementById('total-conversations').textContent = data.length;
+            
+            const uniqueSessions = new Set(data.map(d => d.session_id)).size;
+            document.getElementById('total-sessions').textContent = uniqueSessions;
+
+            // Calculate ratings
+            const ratingsData = data.filter(d => d.rating !== null && d.rating !== undefined);
+            const totalRatings = ratingsData.length;
+            document.getElementById('total-ratings').textContent = totalRatings;
+            
+            if (totalRatings > 0) {
+                const avgRating = (ratingsData.reduce((sum, d) => sum + d.rating, 0) / totalRatings).toFixed(1);
+                document.getElementById('avg-rating').textContent = avgRating + ' ⭐';
+            } else {
+                document.getElementById('avg-rating').textContent = '-';
+            }
+
+            // Update charts
+            updateDailyChart(data);
+            updateHourlyChart(data);
+            updateRatingsChart(data);
+            updateRatingsTimeChart(data);
+            updateSessionsChart(data);
+            updateTable(data);
+        }
+
+        function updateDailyChart(data) {
+            const dailyData = {};
+            data.forEach(item => {
+                const date = item.created_at.split('T')[0];
+                dailyData[date] = (dailyData[date] || 0) + 1;
             });
-        });
+
+            const sortedDates = Object.keys(dailyData).sort();
+            const counts = sortedDates.map(date => dailyData[date]);
+
+            if (charts.daily) charts.daily.destroy();
+
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            charts.daily = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'Conversaciones',
+                        data: counts,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateHourlyChart(data) {
+            const hourlyData = new Array(24).fill(0);
+            data.forEach(item => {
+                const hour = new Date(item.created_at).getHours();
+                hourlyData[hour]++;
+            });
+
+            if (charts.hourly) charts.hourly.destroy();
+
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            charts.hourly = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Conversaciones',
+                        data: hourlyData,
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSessionsChart(data) {
+            const sessionCounts = {};
+            data.forEach(item => {
+                sessionCounts[item.session_id] = (sessionCounts[item.session_id] || 0) + 1;
+            });
+
+            const sortedSessions = Object.entries(sessionCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            if (charts.sessions) {
+                charts.sessions.destroy();
+                charts.sessions = null;
+            }
+
+            const ctx = document.getElementById('sessionsChart').getContext('2d');
+            charts.sessions = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedSessions.map(s => s[0].substring(0, 20) + '...'),
+                    datasets: [{
+                        label: 'Mensajes',
+                        data: sortedSessions.map(s => s[1]),
+                        backgroundColor: 'rgba(118, 75, 162, 0.8)',
+                        borderColor: '#764ba2',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRatingsChart(data) {
+            // Contar ratings del 1 al 5
+            const ratingCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+            data.forEach(item => {
+                if (item.rating >= 1 && item.rating <= 5) {
+                    ratingCounts[item.rating]++;
+                }
+            });
+
+            if (charts.ratings) {
+                charts.ratings.destroy();
+                charts.ratings = null;
+            }
+
+            const ctx = document.getElementById('ratingsChart').getContext('2d');
+            charts.ratings = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['⭐ 1', '⭐⭐ 2', '⭐⭐⭐ 3', '⭐⭐⭐⭐ 4', '⭐⭐⭐⭐⭐ 5'],
+                    datasets: [{
+                        label: 'Cantidad',
+                        data: [ratingCounts[1], ratingCounts[2], ratingCounts[3], ratingCounts[4], ratingCounts[5]],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(249, 115, 22, 0.8)',
+                            'rgba(234, 179, 8, 0.8)',
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(16, 185, 129, 0.8)'
+                        ],
+                        borderColor: [
+                            '#ef4444',
+                            '#f97316',
+                            '#eab308',
+                            '#22c55e',
+                            '#10b981'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRatingsTimeChart(data) {
+            // Agrupar ratings por día
+            const dailyRatings = {};
+            data.forEach(item => {
+                if (item.rating >= 1 && item.rating <= 5) {
+                    const date = item.created_at.split('T')[0];
+                    if (!dailyRatings[date]) {
+                        dailyRatings[date] = [];
+                    }
+                    dailyRatings[date].push(item.rating);
+                }
+            });
+
+            const sortedDates = Object.keys(dailyRatings).sort();
+            const avgRatings = sortedDates.map(date => {
+                const ratings = dailyRatings[date];
+                return (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1);
+            });
+
+            if (charts.ratingsTime) {
+                charts.ratingsTime.destroy();
+                charts.ratingsTime = null;
+            }
+
+            const ctx = document.getElementById('ratingsTimeChart').getContext('2d');
+            charts.ratingsTime = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'Rating Promedio',
+                        data: avgRatings,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                const row = tbody.insertRow();
+                row.innerHTML = '<td colspan="5" style="text-align: center; padding: 20px;">No hay conversaciones para mostrar</td>';
+                document.getElementById('prev-btn').disabled = true;
+                document.getElementById('next-btn').disabled = true;
+                return;
+            }
+
+            // Calcular paginación
+            const totalPages = Math.ceil(data.length / rowsPerPage);
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const pageData = data.slice(startIndex, endIndex);
+
+            // Actualizar información de página
+            document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (${data.length} total)`;
+            
+            // Habilitar/deshabilitar botones
+            document.getElementById('prev-btn').disabled = currentPage === 1;
+            document.getElementById('next-btn').disabled = currentPage === totalPages;
+
+            // Renderizar filas
+            pageData.forEach(item => {
+                const row = tbody.insertRow();
+                
+                let dateChile = 'N/A';
+                try {
+                    const utcDate = new Date(item.created_at);
+                    // NOTA: La base de datos guarda en hora Chile (no en UTC)
+                    // Por lo tanto NO necesitamos restar 3 horas
+                    const chileDate = utcDate;
+                    
+                    // Formatear en formato legible
+                    const day = String(chileDate.getUTCDate()).padStart(2, '0');
+                    const month = String(chileDate.getUTCMonth() + 1).padStart(2, '0');
+                    const year = chileDate.getUTCFullYear();
+                    const hours = String(chileDate.getUTCHours()).padStart(2, '0');
+                    const minutes = String(chileDate.getUTCMinutes()).padStart(2, '0');
+                    const seconds = String(chileDate.getUTCSeconds()).padStart(2, '0');
+                    
+                    dateChile = `${day}-${month}-${year}, ${hours}:${minutes}:${seconds}`;
+                    
+                } catch (e) {
+                    console.error('Error formateando fecha:', e);
+                    dateChile = item.created_at;
+                }
+
+                let messagePreview = 'Sin mensaje';
+                try {
+                    if (item.message) {
+                        const msg = typeof item.message === 'string' ? JSON.parse(item.message) : item.message;
+                        messagePreview = msg.content || msg.text || JSON.stringify(msg).substring(0, 50);
+                    }
+                } catch (e) {
+                    messagePreview = String(item.message || '').substring(0, 50);
+                }
+
+                const email = item.user_email || '-';
+                const rating = item.rating ? '⭐'.repeat(item.rating) + ` (${item.rating})` : '-';
+
+                row.innerHTML = `
+                    <td>${item.id || 'N/A'}</td>
+                    <td>${email}</td>
+                    <td>${dateChile}</td>
+                    <td class="message-preview" title="${messagePreview}">${messagePreview}</td>
+                    <td style="text-align: center;">${rating}</td>
+                `;
+            });
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(allData.length / rowsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateTable(allData);
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updateTable(allData);
+            }
+        }
+
+        function downloadCSV() {
+            if (!allData || allData.length === 0) {
+                showMessage('No hay datos para descargar', true);
+                return;
+            }
+
+            // Crear CSV
+            let csv = 'ID,Email,Session ID,Fecha y Hora (Chile),Mensaje,Rating\n';
+            
+            allData.forEach(item => {
+                let dateChile = 'N/A';
+                try {
+                    const utcDate = new Date(item.created_at);
+                    // La base de datos guarda en hora Chile (no UTC)
+                    const chileDate = utcDate;
+                    
+                    const day = String(chileDate.getUTCDate()).padStart(2, '0');
+                    const month = String(chileDate.getUTCMonth() + 1).padStart(2, '0');
+                    const year = chileDate.getUTCFullYear();
+                    const hours = String(chileDate.getUTCHours()).padStart(2, '0');
+                    const minutes = String(chileDate.getUTCMinutes()).padStart(2, '0');
+                    const seconds = String(chileDate.getUTCSeconds()).padStart(2, '0');
+                    
+                    dateChile = `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+                } catch (e) {
+                    console.error('Error formateando fecha:', e);
+                    dateChile = item.created_at;
+                }
+
+                let messageText = '';
+                try {
+                    if (item.message) {
+                        const msg = typeof item.message === 'string' ? JSON.parse(item.message) : item.message;
+                        messageText = msg.content || msg.text || JSON.stringify(msg);
+                        // Escapar comillas y saltos de línea para CSV
+                        messageText = messageText.replace(/"/g, '""').replace(/\n/g, ' ');
+                    }
+                } catch (e) {
+                    messageText = String(item.message || '');
+                }
+
+                const email = item.user_email || '';
+                const rating = item.rating || '';
+
+                csv += `${item.id},"${email}","${item.session_id}","${dateChile}","${messageText}",${rating}\n`;
+            });
+
+            // Crear archivo y descargarlo
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            const now = new Date();
+            const filename = `conversaciones_chatbot_${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}.csv`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showMessage(`✅ Descargado: ${filename} (${allData.length} registros)`, false);
+        }
+
+        // Set default date range
+        const today = new Date();
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        document.getElementById('date-to').value = today.toISOString().split('T')[0];
+        document.getElementById('date-from').value = weekAgo.toISOString().split('T')[0];
     </script>
 </body>
 </html>
